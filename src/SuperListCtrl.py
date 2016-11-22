@@ -1,3 +1,5 @@
+import wxversion
+wxversion.select( "3.0" )
 import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 

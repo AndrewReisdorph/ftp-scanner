@@ -3,6 +3,8 @@ import re
 import ftplib
 import guessit
 
+import wxversion
+wxversion.select( "3.0" )
 import wx
 
 from VideoInfoFinder import VideoInfoFinder

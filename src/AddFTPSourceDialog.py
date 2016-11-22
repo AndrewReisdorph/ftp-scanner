@@ -2,6 +2,8 @@
 import re
 
 # wxpython
+import wxversion
+wxversion.select( "3.0" )
 import wx
 
 
