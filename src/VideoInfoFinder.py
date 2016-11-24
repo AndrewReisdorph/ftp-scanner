@@ -8,7 +8,7 @@ from lxml import html
 class VideoInfoFinder(object):
 
     def __init__(self):
-        self.driver = webdriver.PhantomJS(r'resources/phantomjs.exe')
+        self.driver = webdriver.PhantomJS(r'../resources/phantomjs.exe')
 
     def get_imbd_data(self, imdb_url):
         imdb_data = {}

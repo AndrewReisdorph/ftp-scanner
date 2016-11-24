@@ -39,15 +39,15 @@ class FTPMonitorGUI(wx.Frame):
         self.Title = 'FTP Monitor'
         self.SetBackgroundColour(wx.Colour(240, 240, 240))
         icon_bundle = wx.IconBundle()
-        icon_bundle.AddIconFromFile(r'resources/cheeseburger.ico', wx.BITMAP_TYPE_ANY)
+        icon_bundle.AddIconFromFile(r'../resources/cheeseburger.ico', wx.BITMAP_TYPE_ANY)
         self.SetIcons(icon_bundle)
 
         # Setup Toolbar
         toolbar = self.CreateToolBar()
-        add_source_image = wx.Image(r'resources/add_32.png').ConvertToBitmap()
-        scan_source_image = wx.Image(r'resources/scan_32.png').ConvertToBitmap()
-        download_image = wx.Image(r'resources/download_32.png').ConvertToBitmap()
-        stop_image = wx.Image(r'resources/stop.png').ConvertToBitmap()
+        add_source_image = wx.Image(r'../resources/add_32.png').ConvertToBitmap()
+        scan_source_image = wx.Image(r'../resources/scan_32.png').ConvertToBitmap()
+        download_image = wx.Image(r'../resources/download_32.png').ConvertToBitmap()
+        stop_image = wx.Image(r'../resources/stop.png').ConvertToBitmap()
         toolbar.AddTool(ADD_SOURCE_TOOL_ID, bitmap=add_source_image)
         toolbar.AddTool(SCAN_SOURCES_TOOL_ID, bitmap=scan_source_image)
         toolbar.AddTool(DOWNLOAD_TOOL_ID, bitmap=download_image)
