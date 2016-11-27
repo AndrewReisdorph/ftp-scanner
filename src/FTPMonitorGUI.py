@@ -3,7 +3,7 @@ import threading
 
 # wxpython
 import wxversion
-wxversion.select( "3.0" )
+wxversion.select("3.0")
 import wx
 
 # Project modules
@@ -70,7 +70,8 @@ class FTPMonitorGUI(wx.Frame):
 
         results_panel = wx.Panel(parent=splitter)
         results_label = wx.StaticText(parent=results_panel, label='Results')
-        results_columns = ['Title', 'Episode Title', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration', 'IMDB Rating', 'Resolution', 'Year', 'File Size', 'IP', 'Filename']
+        results_columns = ['Title', 'Episode Title', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration',
+                           'IMDB Rating', 'Resolution', 'Year', 'File Size', 'IP', 'Filename']
         self.results_listctrl = SuperListCtrl(parent=results_panel, columns=results_columns)
         results_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
         results_panel_vsizer.Add(results_label)
@@ -95,32 +96,16 @@ class FTPMonitorGUI(wx.Frame):
 
     def process_new_result(self, result_dict):
         row_data = []
-        row_data.append(result_dict.get('name','-'))
-        row_data.append(result_dict.get('episode_title','-'))
-        row_data.append(result_dict.get('episode','-'))
-        row_data.append(result_dict.get('season','-'))
-        row_data.append(result_dict.get('rating', '-'))
-        genre_list = result_dict.get('imdb_rating','-')
-        if genre_list != '-':
-            genre_list = ', '.join([genre for genre in genre_list])
-        row_data.append(genre_list)
-        row_data.append(result_dict.get('duration', '-'))
-        row_data.append(result_dict.get('imdb_rating','-'))
-        row_data.append(result_dict.get('screen_size','-'))
-        row_data.append(result_dict.get('year','-'))
-        row_data.append(result_dict.get('filesize','-'))
-        row_data.append(result_dict.get('ip','-'))
-        row_data.append(result_dict.get('filename','-'))
+        keys = ['title', 'episode_title', 'episode', 'season', 'mpaa', 'genres', 'runtime', 'rating',
+                'screen_size', 'year', 'filesize', 'ip', 'filename']
+
+        for key in keys:
+            row_data.append(result_dict.get(key, '-'))
 
         print '\tRAW:',result_dict
         print '\tNEW ROW:',row_data
 
-
-        keys = ['title', 'episode_title', 'episode', 'season', 'screen_size', 'year', 'filesize', 'ip', 'filename']
-        #row_data = [str(result_dict.get(key, '-')) for key in keys]
-
         self.log(row_data)
-
         self.results_listctrl.add_row(row_data)
 
     def log(self, message):
