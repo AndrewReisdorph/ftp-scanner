@@ -24,9 +24,9 @@ class FTPCrawler(object):
             self.connection.login()
             self.connection.sendcmd('TYPE i')
         except ftplib.socket.error as e:
-            print "Connection failed: {}".format(e)
+            self.log("Connection failed: {}".format(e))
             return False
-        print "Connection established."
+        self.log("Connection established.")
         return True
 
     def close(self):
@@ -56,6 +56,9 @@ class FTPCrawler(object):
                 return "%3.1f%s%s" % (num, unit, suffix)
             num /= 1024.0
         return "%.1f%s%s" % (num, 'Yi', suffix)
+
+    def log(self, message):
+        self.main_app.log(message)
 
     def scan(self, directory=None):
         if self.main_app.quit_request:

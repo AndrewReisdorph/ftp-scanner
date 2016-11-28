@@ -7,6 +7,7 @@ from guessit import guessit
 from lxml import html
 from imdb import IMDb
 
+DEBUG = 0
 
 class VideoInfoFinder(object):
 
@@ -20,8 +21,10 @@ class VideoInfoFinder(object):
         match_obj = re.search(video_id_regex, imdb_url)
         if match_obj:
             video_id = match_obj.groupdict()['video_id']
+            imdb_data['video_id'] = video_id
             database_results = self.imdb.get_movie(video_id).data
-            for key in ['director', 'genres', 'kind', 'mpaa', 'certificates', 'rating', 'runtimes', 'title', 'year']:
+            for key in ['director', 'genres', 'kind', 'mpaa', 'certificates', 'rating', 'runtimes', 'title', 'year',
+                        'season', 'episode', 'episode of']:
                 if key in database_results:
                     if key == 'genres':
                         genres = ', '.join(database_results['genres'])
@@ -52,8 +55,13 @@ class VideoInfoFinder(object):
                         else:
                             minutes = None
                         imdb_data['runtime'] = minutes
+                    elif key == 'episode of':
+                        series_name = database_results.get(key, None)
+                        if series_name:
+                            series_name = series_name.data['title']
+                        imdb_data['series'] = series_name
                     else:
-                        imdb_data[key] = database_results[key]
+                        imdb_data[key] = database_results.get(key,None)
                 else:
                     imdb_data[key] = None
 
@@ -63,7 +71,7 @@ class VideoInfoFinder(object):
         urls = []
         search_term = quote(search_term + ' imdb')
         search_url = 'https://duckduckgo.com/?q={}&ia=web'.format(search_term)
-        print 'url:', search_url
+        self.log('url: {}'.format(search_url))
         self.driver.get(search_url)
         page_source = self.driver.page_source
         tree = html.fromstring(page_source)
@@ -93,19 +101,19 @@ class VideoInfoFinder(object):
                 search_name = search_name.replace('.', ' ')
                 search_name = search_name.replace('-', ' ')
 
-
                 links = self.get_duckduckgo_links(search_name)
                 for link_url in links:
                     if 'www.imdb.com' in link_url and '/name/' not in link_url:
                         imdb_link = link_url
                         break
                 else:
-                    print 'No imdb links found for:{} - {} - {}'.format(search_name, guessit_info, guessit(search_name))
+                    self.log('No imdb links found for:{} - {} - {}'.format(search_name, guessit_info, guessit(search_name)))
                 if imdb_link:
                     break
 
         if imdb_link is not None:
-            print '\t', imdb_link
+            self.log('\t{}'.format(imdb_link))
+            video_info['search_term'] = search_name
             video_info.update(guessit_info)
             imdb_data = self.get_imbd_data(imdb_link)
             video_info.update(imdb_data)
@@ -117,13 +125,17 @@ class VideoInfoFinder(object):
                         video_info.pop(key)
 
         else:
-            print '\tNo imdb link found'
+            self.log('\tNo imdb link found')
 
         if 'format' in video_info and 'screen_size' not in video_info:
             if video_info['format'] == 'DVD':
                 video_info['screen_size'] = '480p'
 
         return video_info
+
+    def log(self, message):
+        if DEBUG:
+            print message
 
 
 if __name__ == '__main__':

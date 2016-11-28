@@ -16,6 +16,7 @@ SCAN_SOURCES_TOOL_ID = wx.NewId()
 DOWNLOAD_TOOL_ID = wx.NewId()
 STOP_SCAN_TOOL_ID = wx.NewId()
 
+release_groups = ['klaxxon']
 
 class FTPMonitorGUI(wx.Frame):
 
@@ -70,7 +71,7 @@ class FTPMonitorGUI(wx.Frame):
 
         results_panel = wx.Panel(parent=splitter)
         results_label = wx.StaticText(parent=results_panel, label='Results')
-        results_columns = ['Title', 'Episode Title', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration',
+        results_columns = ['Title', 'Series', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration',
                            'IMDB Rating', 'Resolution', 'Year', 'File Size', 'IP', 'Filename']
         self.results_listctrl = SuperListCtrl(parent=results_panel, columns=results_columns)
         results_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
@@ -96,14 +97,17 @@ class FTPMonitorGUI(wx.Frame):
 
     def process_new_result(self, result_dict):
         row_data = []
-        keys = ['title', 'episode_title', 'episode', 'season', 'mpaa', 'genres', 'runtime', 'rating',
+        keys = ['title', 'series', 'episode', 'season', 'mpaa', 'genres', 'runtime', 'rating',
                 'screen_size', 'year', 'filesize', 'ip', 'filename']
 
         for key in keys:
-            row_data.append(result_dict.get(key, '-'))
+            value = result_dict.get(key, '-')
+            if value is None:
+                value = '-'
+            row_data.append(value)
 
-        print '\tRAW:',result_dict
-        print '\tNEW ROW:',row_data
+        #print '\tRAW:',result_dict
+        #print '\tNEW ROW:',row_data
 
         self.log(row_data)
         self.results_listctrl.add_row(row_data)
