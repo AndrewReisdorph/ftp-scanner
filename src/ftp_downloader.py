@@ -50,6 +50,8 @@ class ftp_monitor( object ):
       Downloads the file
       @param destination_dir: directory to save file
       @type destination_dir: string
+      @param destination_name: Name of the file to save
+      @type destination_name: string
       """
       src_file_path = urllib.unquote( self.url_obj.path )
       src_file_dir = os.path.dirname( src_file_path )

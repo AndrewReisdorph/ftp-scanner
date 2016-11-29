@@ -2,6 +2,7 @@ import socket
 import struct
 import json
 import time
+import cPickle
 
 MAX_READ = 4096
 DEFAULT_PORT = 1024
@@ -11,6 +12,7 @@ ADD_FILE_TO_QUEUE = 'AFTQ'
 GET_OVERALL_STATUS = 'GOST'
 CANCEL_DOWNLOAD = 'CANC'
 REMOVE_FILE_DOWNLOAD = 'REMV'
+SET_DOWNLOAD_DIR = 'SETD'
 
 # connection retries
 RETRIES = 5
@@ -39,7 +41,8 @@ class Host( object ):
       self.cmd_functions = { ADD_FILE_TO_QUEUE: self.add_file_to_queue,
                              GET_OVERALL_STATUS: self.get_overall_status,
                              CANCEL_DOWNLOAD: self.cancel_download,
-                             REMOVE_FILE_DOWNLOAD: self.remove_file_download }
+                             REMOVE_FILE_DOWNLOAD: self.remove_file_download,
+                             SET_DOWNLOAD_DIR: self.set_download_dir }
 
 
    def start_listener( self ):
@@ -49,6 +52,7 @@ class Host( object ):
       while True:
          # create an INET, STREAMing socket
          serversocket = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
          serversocket.bind(('0.0.0.0', self.port))
          serversocket.listen(1)
          connection, client_address = serversocket.accept()
@@ -65,17 +69,21 @@ class Host( object ):
          resp = fn_to_call( arg_str )
          # send response
          send_with_length( connection, resp )
+         
+         # wait for eof
+         eof = connection.recv( MAX_READ )
 
          # close socket
-         connection.close( )
+         serversocket.close( )
 
-   def add_file_to_queue( self, url ):
+   def add_file_to_queue( self, argstr ):
       """
       add a file to the DL service queue
-      @param url: full url of the file to download
-      @type url: string
+      @param argstr: pickled string of (url, destination_name)
+      @type argstr: string
       """
-      self.dl_service.add_file_to_queue( url )
+      ( url, destination_name ) = cPickle.loads( argstr )
+      self.dl_service.add_file_to_queue( url, destination_name )
       return 'file added'
 
    def get_overall_status( self, argstr ):
@@ -105,6 +113,15 @@ class Host( object ):
       @type uid: string
       """
       self.dl_service.remove_file_download( uid )
+      return ''
+
+   def set_download_dir( self, new_download_dir ):
+      """
+      Sets a destination directory for file downloads
+      @param new_download_dir: new destination directory to use
+      @type new_download_dir: string
+      """
+      self.dl_service.set_destination_dir( new_download_dir )
       return ''
 
 
@@ -144,19 +161,24 @@ class Client( object ):
 
       return socketToHost
 
-   def add_file_to_queue( self, url ):
+   def _send_buffer( self, buff ):
+      socket_to_host = self._connect_to_host( )
+      print 'sending ', buff
+      send_with_length( socket_to_host, buff )
+      response = receive_with_length( socket_to_host )
+      socket_to_host.close( )
+      return response
+
+   def add_file_to_queue( self, url, destination_name ):
       """
       add a file to the DL service queue
       @param url: full url of the file to download
       @type url: string
+      @param destination_name: Name of the file to save
+      @type destination_name: string
       """
-      socket_to_host = self._connect_to_host( )
-      send_buff = ADD_FILE_TO_QUEUE + url
-      print 'sending ', send_buff
-      send_with_length( socket_to_host, send_buff )
-      response = receive_with_length( socket_to_host )
-      print response
-      socket_to_host.close( )
+      send_buff = ADD_FILE_TO_QUEUE + cPickle.dumps( ( url, destination_name ) )
+      self._send_buffer( send_buff )
 
    def get_overall_status( self ):
       """
@@ -165,28 +187,22 @@ class Client( object ):
       @type argstr: string
       @return: status dictionary serialized as json
       """
-      socket_to_host = self._connect_to_host( )
       send_buff = GET_OVERALL_STATUS
-      send_with_length( socket_to_host, send_buff )
-      response = receive_with_length( socket_to_host )
-      socket_to_host.close( )
+      response = self._send_buffer( send_buff )
 
       # parse response
       status_dict = json.loads( response )
       return status_dict
 
-   def cancel_download( self, uid ):
+   def cancel_file_download( self, uid ):
       """
       Ping the status of the dl service
       @param argstr: empty string
       @type argstr: string
       @return: status dictionary serialized as json
       """
-      socket_to_host = self._connect_to_host( )
       send_buff = CANCEL_DOWNLOAD + uid
-      send_with_length( socket_to_host, send_buff )
-      response = receive_with_length( socket_to_host )
-      socket_to_host.close( )
+      response = self._send_buffer( send_buff )
 
       # parse response
       return json.loads( response )
@@ -198,11 +214,17 @@ class Client( object ):
       @type argstr: string
       @return: status dictionary serialized as json
       """
-      socket_to_host = self._connect_to_host( )
       send_buff = REMOVE_FILE_DOWNLOAD + uid
-      send_with_length( socket_to_host, send_buff )
-      response = receive_with_length( socket_to_host )
-      socket_to_host.close( )
+      self._send_buffer( send_buff )
+
+   def set_destination_dir( self, new_download_dir ):
+      """
+      Sets a destination directory for file downloads
+      @param new_download_dir: new destination directory to use
+      @type new_download_dir: string
+      """
+      send_buff = SET_DOWNLOAD_DIR + new_download_dir
+      self._send_buffer( send_buff )
 
 
 def receive_with_length( socket_connection ):

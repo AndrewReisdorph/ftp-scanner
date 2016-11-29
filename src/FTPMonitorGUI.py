@@ -10,6 +10,8 @@ import wx
 import FTPCrawler
 from AddFTPSourceDialog import AddFTPSourceDialog
 from SuperListCtrl import SuperListCtrl
+import ftp_service_comm
+import ftp_download_service
 
 ADD_SOURCE_TOOL_ID = wx.NewId()
 SCAN_SOURCES_TOOL_ID = wx.NewId()
@@ -32,8 +34,15 @@ class FTPMonitorGUI(wx.Frame):
 
         self.init_ui()
 
-        #self.sources_listctrl.add_row(['73.18.2.2', '/Storage/TVShows'])
-        self.sources_listctrl.add_row(['24.162.163.232', '/shares/STAR/movies'])
+        self.destinations = [ ]
+        local = ftp_download_service.DownloadService( )
+        local.start( )
+        self.destinations.append( local )
+        remote = ftp_service_comm.Client( '127.0.0.1', 1066 )
+        self.destinations.append( remote )
+
+        self.sources_listctrl.add_row(['67.172.255.177', '/Public/Movies/Z'])
+        #self.sources_listctrl.add_row(['24.162.163.232', '/shares/STAR/movies'])
 
     def init_ui(self):
         self.Title = 'FTP Monitor'
@@ -81,12 +90,35 @@ class FTPMonitorGUI(wx.Frame):
         splitter.SetMinimumPaneSize(300)
 
         self.progress_bar = wx.Gauge(parent=self)
-        self.log_textctrl = wx.TextCtrl(parent=self, style=wx.TE_READONLY | wx.TE_MULTILINE)
+
+
+        splitter2 = wx.SplitterWindow(parent=self)
+        log_panel = wx.Panel(parent=splitter2)
+        log_label = wx.StaticText(parent=log_panel, label='Log')
+        self.log_textctrl = wx.TextCtrl(parent=log_panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
+        log_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
+        log_panel_vsizer.Add( log_label )
+        log_panel_vsizer.Add( self.log_textctrl, flag=wx.EXPAND, proportion=1 )
+        log_panel.SetSizer( log_panel_vsizer )
+
+        downloads_panel = wx.Panel(parent=splitter2)
+        downloads_label = wx.StaticText(parent=downloads_panel, label='Downloads')
+        self.downloads_listctrl = SuperListCtrl(parent=downloads_panel, columns=[ 'Status', 'Source', 'Dest', 'Speed' ])
+        downloads_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
+        downloads_panel_vsizer.Add( downloads_label )
+        downloads_panel_vsizer.Add( self.downloads_listctrl, flag=wx.EXPAND, proportion=1 )
+        downloads_panel.SetSizer( downloads_panel_vsizer )
+
+        splitter2.SplitVertically( log_panel, downloads_panel )
+        splitter2.SetMinimumPaneSize(300)
+
+
 
         main_vsizer = wx.BoxSizer(wx.VERTICAL)
         main_vsizer.Add(splitter, flag=wx.EXPAND | wx.ALL, proportion=4, border=5)
         main_vsizer.Add(self.progress_bar, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=5)
-        main_vsizer.Add(self.log_textctrl, flag=wx.EXPAND | wx.ALL, proportion=1, border=5)
+        main_vsizer.Add(splitter2, flag=wx.EXPAND | wx.ALL, proportion=1, border=5)
+        #main_vsizer.Add(self.log_textctrl, flag=wx.EXPAND | wx.ALL, proportion=1, border=5)
 
         self.SetSizer(main_vsizer)
 
@@ -157,7 +189,10 @@ class FTPMonitorGUI(wx.Frame):
 
     def download_button_callback(self, event):
         event.Skip()
+        rows = self.results_listctrl.get_all_rows( )
+        selected = self.results_listctrl.GetNextSelected( -1 )
         print 'download'
+        print rows[ selected ]
 
 
 def main():

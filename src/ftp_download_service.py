@@ -23,7 +23,7 @@ STATUS_TO_NAME = { ftp_downloader.QUEUED     : 'QUEUED',
                    ftp_downloader.FAILED     : 'FAILED',
                    ftp_downloader.CANCELLED  : 'CANCELLED' }
 
-DESTINATION_DIR = 'C:\\test'
+DESTINATION_DIR = os.path.join( os.path.expanduser( '~' ), 'FTPDownloads' )
 
 class FileStatus( object ):
    """
@@ -63,6 +63,7 @@ class DownloadService( object ):
       self.exit_request = False
       self.status_list = [ ]
       self.downloader_list = [ ]
+      self.destination_dir = DESTINATION_DIR
 
    def start( self ):
       """
@@ -79,13 +80,23 @@ class DownloadService( object ):
       """
       self.exit_request = True
 
-   def add_file_to_queue( self, file_url ):
+   def set_destination_dir( self, new_dir ):
+      """
+      Sets a destination directory for file downloads
+      @param new_dir: new destination directory to use
+      @type new_dir: string
+      """
+      self.destination_dir = new_dir
+
+   def add_file_to_queue( self, file_url, destination_name ):
       """
       Adds a file to the download queue
       @param file_url: full url of the file to download
       @type file_url: string
+      @param destination_name: Name of the file to save
+      @type destination_name: string
       """
-      self.download_task_queue.put( file_url )
+      self.download_task_queue.put( ( file_url, destination_name ) )
 
    def download_queue_worker( self ):
       """
@@ -93,7 +104,7 @@ class DownloadService( object ):
       """
       while not self.exit_request:
          # get next file to download from queue
-         file_url = self.download_task_queue.get( )
+         ( file_url, destination_name ) = self.download_task_queue.get( )
 
          # parse the url
          parsed_url = urlparse.urlparse( file_url )
@@ -111,7 +122,7 @@ class DownloadService( object ):
             self.workers_per_server[ server ] = 0
 
          # add file to server queue
-         self.server_queues[ server ].put( ( parsed_url, status_obj ) )
+         self.server_queues[ server ].put( ( parsed_url, status_obj, destination_name ) )
 
          # create a new worker for the server if needed
          if self.workers_per_server[ server ] < MAX_WORKERS_PER_SERVER:
@@ -130,7 +141,7 @@ class DownloadService( object ):
       while not self.exit_request:
          try:
             # check for a pending file
-            ( url_obj, status_obj ) = self.server_queues[ server ].get_nowait( )
+            ( url_obj, status_obj, destination_name ) = self.server_queues[ server ].get_nowait( )
          except Queue.Empty:
             # if no file is pending in the queue, the thread can be terminated
             break
@@ -138,12 +149,12 @@ class DownloadService( object ):
          # download the file
          monitor = ftp_downloader.ftp_monitor( url_obj, status_obj )
          self.downloader_list.append( monitor )
-         monitor.download_file( DESTINATION_DIR )
+         monitor.download_file( self.destination_dir, destination_name=destination_name )
 
       # remove worker in count
       self.workers_per_server[ server ] -= 1
 
-   def get_overall_status( self, do_print=True ):
+   def get_overall_status( self ):
       """
       Queries the file status of each existing downloader
       @return: dictionary of file status info
