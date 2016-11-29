@@ -3,7 +3,7 @@ import threading
 
 # wxpython
 import wxversion
-wxversion.select( "3.0" )
+wxversion.select("3.0")
 import wx
 
 # Project modules
@@ -18,6 +18,7 @@ SCAN_SOURCES_TOOL_ID = wx.NewId()
 DOWNLOAD_TOOL_ID = wx.NewId()
 STOP_SCAN_TOOL_ID = wx.NewId()
 
+release_groups = ['klaxxon']
 
 class FTPMonitorGUI(wx.Frame):
 
@@ -48,15 +49,15 @@ class FTPMonitorGUI(wx.Frame):
         self.Title = 'FTP Monitor'
         self.SetBackgroundColour(wx.Colour(240, 240, 240))
         icon_bundle = wx.IconBundle()
-        icon_bundle.AddIconFromFile(r'resources/cheeseburger.ico', wx.BITMAP_TYPE_ANY)
+        icon_bundle.AddIconFromFile(r'../resources/cheeseburger.ico', wx.BITMAP_TYPE_ANY)
         self.SetIcons(icon_bundle)
 
         # Setup Toolbar
         toolbar = self.CreateToolBar()
-        add_source_image = wx.Image(r'resources/add_32.png').ConvertToBitmap()
-        scan_source_image = wx.Image(r'resources/scan_32.png').ConvertToBitmap()
-        download_image = wx.Image(r'resources/download_32.png').ConvertToBitmap()
-        stop_image = wx.Image(r'resources/stop.png').ConvertToBitmap()
+        add_source_image = wx.Image(r'../resources/add_32.png').ConvertToBitmap()
+        scan_source_image = wx.Image(r'../resources/scan_32.png').ConvertToBitmap()
+        download_image = wx.Image(r'../resources/download_32.png').ConvertToBitmap()
+        stop_image = wx.Image(r'../resources/stop.png').ConvertToBitmap()
         toolbar.AddTool(ADD_SOURCE_TOOL_ID, bitmap=add_source_image)
         toolbar.AddTool(SCAN_SOURCES_TOOL_ID, bitmap=scan_source_image)
         toolbar.AddTool(DOWNLOAD_TOOL_ID, bitmap=download_image)
@@ -79,7 +80,8 @@ class FTPMonitorGUI(wx.Frame):
 
         results_panel = wx.Panel(parent=splitter)
         results_label = wx.StaticText(parent=results_panel, label='Results')
-        results_columns = ['Title', 'Episode Title', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration', 'IMDB Rating', 'Resolution', 'Year', 'File Size', 'IP', 'Filename']
+        results_columns = ['Title', 'Series', 'Episode Number', 'Season', 'Rating', 'Genre', 'Duration',
+                           'IMDB Rating', 'Resolution', 'Year', 'File Size', 'IP', 'Filename']
         self.results_listctrl = SuperListCtrl(parent=results_panel, columns=results_columns)
         results_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
         results_panel_vsizer.Add(results_label)
@@ -127,32 +129,19 @@ class FTPMonitorGUI(wx.Frame):
 
     def process_new_result(self, result_dict):
         row_data = []
-        row_data.append(result_dict.get('name','-'))
-        row_data.append(result_dict.get('episode_title','-'))
-        row_data.append(result_dict.get('episode','-'))
-        row_data.append(result_dict.get('season','-'))
-        row_data.append(result_dict.get('rating', '-'))
-        genre_list = result_dict.get('imdb_rating','-')
-        if genre_list != '-':
-            genre_list = ', '.join([genre for genre in genre_list])
-        row_data.append(genre_list)
-        row_data.append(result_dict.get('duration', '-'))
-        row_data.append(result_dict.get('imdb_rating','-'))
-        row_data.append(result_dict.get('screen_size','-'))
-        row_data.append(result_dict.get('year','-'))
-        row_data.append(result_dict.get('filesize','-'))
-        row_data.append(result_dict.get('ip','-'))
-        row_data.append(result_dict.get('filename','-'))
+        keys = ['title', 'series', 'episode', 'season', 'mpaa', 'genres', 'runtime', 'rating',
+                'screen_size', 'year', 'filesize', 'ip', 'filename']
 
-        print '\tRAW:',result_dict
-        print '\tNEW ROW:',row_data
+        for key in keys:
+            value = result_dict.get(key, '-')
+            if value is None:
+                value = '-'
+            row_data.append(value)
 
-
-        keys = ['title', 'episode_title', 'episode', 'season', 'screen_size', 'year', 'filesize', 'ip', 'filename']
-        #row_data = [str(result_dict.get(key, '-')) for key in keys]
+        #print '\tRAW:',result_dict
+        #print '\tNEW ROW:',row_data
 
         self.log(row_data)
-
         self.results_listctrl.add_row(row_data)
 
     def log(self, message):
