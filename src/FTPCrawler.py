@@ -7,7 +7,6 @@ import wx
 
 import VideoInfoFinder
 
-
 class FTPCrawler(object):
 
     def __init__(self, ip_address, search_path, main_app):
@@ -96,5 +95,12 @@ class FTPCrawler(object):
                         file_size = self.connection.size(directory+'/'+item_name)
                         video_info['filesize'] = self.sizeof_fmt(file_size)
                         video_info['parent_dir'] = parent_directory
+                        try:
+                            video_info['full_path'] = self.ip_address + directory + '/' + item_name.encode( 'ascii', 'replace' )
+                        except Exception as the_e:
+                            print self.ip_address
+                            print directory
+                            print item_name
+                            #raise( the_e )
                         wx.CallAfter(self.main_app.process_new_result, result_dict=video_info)
                 self.append_directory_tree(directory, item_name, True)

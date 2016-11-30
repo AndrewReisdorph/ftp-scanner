@@ -226,6 +226,12 @@ class Client( object ):
       send_buff = SET_DOWNLOAD_DIR + new_download_dir
       self._send_buffer( send_buff )
 
+   def stop( self ):
+      """
+      Does nothing.  Only here to mirror interface of ftp_download_service
+      """
+      pass
+
 
 def receive_with_length( socket_connection ):
    # get the length of the data

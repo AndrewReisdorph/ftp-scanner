@@ -6,12 +6,58 @@ from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 
 class SuperListCtrl(wx.ListCtrl, ListCtrlAutoWidthMixin):
 
-    def __init__(self, parent, columns):
-        super(SuperListCtrl, self).__init__(parent=parent, style=wx.LC_REPORT | wx.LC_HRULES | wx.LC_VRULES)
-        ListCtrlAutoWidthMixin.__init__(self)
+    ITEM_ID_OFFSET = 100
 
+    def __init__(self, parent, columns, style=None):
+        default_style = wx.LC_REPORT | wx.LC_HRULES | wx.LC_VRULES
+        if style is not None:
+            style = default_style | style
+        else:
+            style = default_style
+        super(SuperListCtrl, self).__init__(parent=parent, style=style)
+        ListCtrlAutoWidthMixin.__init__(self)
+    
         for col, heading in enumerate(columns):
             self.InsertColumn(heading=heading, col=col)
+    
+        self.custom_data = { }
+
+    def get_item_custom_data( self, item_idx ):
+        """
+        Get the custom data associated with an item based on its index.
+        @param item_idx: The index of the item data has been requested for.
+        @type item_idx: int
+        @return: If the index is valid return the custom data, otherwise
+        return None.
+        """
+        # get item's custom ID
+        ID = self.GetItemData( item_idx )
+        if ID != 0:
+            return self.custom_data.get( ID, None )
+        else:
+            return None
+
+    def set_item_custom_data( self, item_idx, data ):
+        """
+        Set custom data for the given item index.
+        @param item_idx: The index of the item to set custom data for.
+        @type item_idx: int
+        @param data: The data to be associated with the item at the given
+        index
+        @return: None
+        """
+        # ItemData holds unique ID of this item.
+        
+        if self.GetItemData( item_idx ) == 0:
+            # if ItemData has not yet been set,
+            # assign the original index plus an offset to be its ID
+            self.SetItemData( item_idx, item_idx + self.ITEM_ID_OFFSET )
+        
+        # get item's custom ID
+        ID = self.GetItemData( item_idx )
+        
+        # update custom_data for this item
+        self.custom_data.update( { ID: data } )
 
     def add_row(self, row_data):
         num_rows = self.GetItemCount()
@@ -24,6 +70,8 @@ class SuperListCtrl(wx.ListCtrl, ListCtrlAutoWidthMixin):
                 self.SetColumnWidth(idx, wx.LIST_AUTOSIZE)
             else:
                 self.SetStringItem(row_index, idx, column_value)
+
+        return row_index
 
     def get_column_rows(self, column_index):
         column_data = []

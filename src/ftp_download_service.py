@@ -12,10 +12,12 @@ import urlparse
 import urllib
 import json
 import uuid
+import time
 
 import ftp_downloader
 
 MAX_WORKERS_PER_SERVER = 2
+QUEUE_POLL_TIME = 1
 
 STATUS_TO_NAME = { ftp_downloader.QUEUED     : 'QUEUED',
                    ftp_downloader.DOWNLOADING: 'DOWNLOADING',
@@ -104,7 +106,11 @@ class DownloadService( object ):
       """
       while not self.exit_request:
          # get next file to download from queue
-         ( file_url, destination_name ) = self.download_task_queue.get( )
+         try:
+            ( file_url, destination_name ) = self.download_task_queue.get_nowait( )
+         except Queue.Empty:
+            time.sleep( QUEUE_POLL_TIME )
+            continue
 
          # parse the url
          parsed_url = urlparse.urlparse( file_url )
