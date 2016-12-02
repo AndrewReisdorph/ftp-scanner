@@ -235,17 +235,22 @@ class Client( object ):
 
 def receive_with_length( socket_connection ):
    # get the length of the data
+   print 'recv'
    length_pack = socket_connection.recv( 4 )
+   print length_pack
    length = struct.unpack( LENGTH_PACK_STR, length_pack )[ 0 ]
    bytes_rec = len( length_pack )
 
    # make sure all bytes were received
    data = ''
+   print length
    while bytes_rec < length:
       bytes_to_read = MAX_READ if ( length - bytes_rec ) > MAX_READ else ( length - bytes_rec )
       data += socket_connection.recv( bytes_to_read )
-      bytes_rec += bytes_to_read
+      bytes_rec = len(data) + len( length_pack )
+      print 'btr {}, len(data) {}'.format(bytes_to_read, len(data))
 
+   print [data]
    return data
 
 def send_with_length( socket_connection, buffer ):

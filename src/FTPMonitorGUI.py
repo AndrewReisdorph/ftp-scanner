@@ -18,6 +18,8 @@ ADD_SOURCE_TOOL_ID = wx.NewId()
 SCAN_SOURCES_TOOL_ID = wx.NewId()
 DOWNLOAD_TOOL_ID = wx.NewId()
 STOP_SCAN_TOOL_ID = wx.NewId()
+CANCEL_DL_ID = wx.NewId()
+REMOVE_DL_ID = wx.NewId()
 
 release_groups = ['klaxxon']
 
@@ -174,10 +176,16 @@ class FTPMonitorGUI(wx.Frame):
         downloads_panel = wx.Panel(parent=splitter2)
         downloads_label = wx.StaticText(parent=downloads_panel, label='Downloads')
         self.downloads_listctrl = SuperListCtrl(parent=downloads_panel, columns=[ 'Status', 'Progress', 'Source', 'File', 'Rate' ])
+        self.downloads_listctrl.Bind( event=wx.EVT_LIST_ITEM_RIGHT_CLICK, handler=self.download_right_click_callback )
         downloads_panel_vsizer = wx.BoxSizer(wx.VERTICAL)
         downloads_panel_vsizer.Add( downloads_label )
         downloads_panel_vsizer.Add( self.downloads_listctrl, flag=wx.EXPAND, proportion=1 )
         downloads_panel.SetSizer( downloads_panel_vsizer )
+
+        # downloads right-click callback
+        self.downloads_context_menu = wx.Menu( )
+        self.downloads_context_menu.Append( CANCEL_DL_ID, 'Cancel' )
+        self.downloads_context_menu.Append( REMOVE_DL_ID, 'Remove' )
 
         splitter2.SplitVertically( log_panel, downloads_panel )
         splitter2.SetMinimumPaneSize(300)
@@ -258,6 +266,8 @@ class FTPMonitorGUI(wx.Frame):
                 url = r'ftp://' + row[ 'Full Path' ]
                 self.active_downloader.add_file_to_queue( url, new_filename )
 
+            self.update_downloads_list( self.active_downloader )
+
 
     def add_downloader( self, ip, port=ftp_service_comm.DEFAULT_PORT ):
         if ip == 'local':
@@ -291,13 +301,13 @@ class FTPMonitorGUI(wx.Frame):
 
         for status in overall_status:
             row_data = [ status.get( name, '?' ) for name in self.downloads_listctrl.get_column_names( ) ]
-            self.downloads_listctrl.add_row( row_data )
+            idx = self.downloads_listctrl.add_row( row_data )
+            self.downloads_listctrl.set_item_custom_data( idx, status )
 
         self.active_downloader = downloader
 
     def downloaders_on_select( self, event ):
         selected_idx = self.downloaders_listctrl.GetFirstSelected( )
-        print 'selected: ', selected_idx
         if selected_idx > -1:
             downloader = self.downloaders_listctrl.get_item_custom_data( selected_idx )
             self.update_downloads_list( downloader )
@@ -306,6 +316,25 @@ class FTPMonitorGUI(wx.Frame):
         dlg = AddDownloaderDialog( self )
         dlg.ShowModal( )
         dlg.Destroy( )
+
+    def download_right_click_callback( self, event ):
+        selected_idx = event.GetIndex()
+        # bind callback to copy results option
+        self.Bind( wx.EVT_MENU, lambda e: self.cancel_download( selected_idx ), id=CANCEL_DL_ID )
+        self.Bind( wx.EVT_MENU, lambda e: self.remove_download( selected_idx ), id=REMOVE_DL_ID )
+
+        # show context menu
+        self.PopupMenu( self.downloads_context_menu, wx.GetMousePosition() )
+
+    def cancel_download( self, selected_idx ):
+        status = self.downloads_listctrl.get_item_custom_data( selected_idx )
+        self.active_downloader.cancel_file_download( status['uid'] )
+        self.update_downloads_list( self.active_downloader )
+
+    def remove_download( self, selected_idx ):
+        status = self.downloads_listctrl.get_item_custom_data( selected_idx )
+        self.active_downloader.remove_file_download( status['uid'] )
+        self.update_downloads_list( self.active_downloader )
 
     def on_quit_cleanup( self, event ):
         for dest in self.destinations:
