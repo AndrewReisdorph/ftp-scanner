@@ -50,12 +50,10 @@ class AddDownloaderDialog( wx.Dialog ):
         options_gridsizer = wx.GridBagSizer( hgap=5, vgap=5 )
 
         ip_label = wx.StaticText( parent=self, label="IP:" )
-        #self.ip_text_ctrl = wx.TextCtrl( parent=self, value="127.0.0.1" )
-        self.ip_text_ctrl = wx.TextCtrl( parent=self, value="meltzserver.mooo.com" )
+        self.ip_text_ctrl = wx.TextCtrl( parent=self, value="127.0.0.1" )
 
         port_label = wx.StaticText( parent=self, label="Port:" )
-        #self.port_text_ctrl = wx.TextCtrl( parent=self, value=str( ftp_service_comm.DEFAULT_PORT ) )
-        self.port_text_ctrl = wx.TextCtrl( parent=self, value=str( 8844 ) )
+        self.port_text_ctrl = wx.TextCtrl( parent=self, value=str( ftp_service_comm.DEFAULT_PORT ) )
 
         add_button = wx.Button( parent=self, label="Ok" )
         add_button.Bind( wx.EVT_BUTTON, self.add_callback )
@@ -99,7 +97,7 @@ class FTPMonitorGUI(wx.Frame):
         self.destinations = [ ]
         self.active_downloader = None
 
-        self.sources_listctrl.add_row(['67.172.255.177', '/Public/Movies'])
+        #self.sources_listctrl.add_row(['67.172.255.177', '/Public/Movies'])
         self.add_downloader( 'local' )
         #self.sources_listctrl.add_row(['24.162.163.232', '/shares/STAR/movies'])
 
