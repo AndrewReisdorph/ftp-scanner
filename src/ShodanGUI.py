@@ -70,6 +70,7 @@ class ShodanGUI(wx.Frame):
         self.ftp_explore_panel = None
         self.results_panel = None
         self.shodan_explorer.login()
+        self.init_gui( )
 
     def init_gui(self):
         main_vsizer = wx.BoxSizer(wx.VERTICAL)
