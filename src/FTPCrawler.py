@@ -5,6 +5,7 @@ import wxversion
 wxversion.select("3.0")
 import wx
 
+import FTPMonitorEvents
 import VideoInfoFinder
 
 class FTPCrawler(object):
@@ -60,6 +61,7 @@ class FTPCrawler(object):
         self.main_app.log(message)
 
     def scan(self, directory=None):
+        # check for quit request
         if self.main_app.quit_request:
             return
 
@@ -70,6 +72,9 @@ class FTPCrawler(object):
         self.connection.dir(directory, dir_list.append)
 
         for item in dir_list:
+            # check for quit request
+            if self.main_app.quit_request:
+                return
             dir_listing_pattern = '^(?P<dir>[\-ld])(?P<permissions>([\-r][\-w][\-xs]){3})\s+(\d+)\s+(\w+)\s+(\w+)' \
                                   '\s+(\d+)\s+(((\w{3})\s+(\d{1,2})\s+(\d{1,2}):(\d{2}))|((\w{3})\s+(\d{1,2})\s+' \
                                   '(\d{4})))\s+(?P<name>.+)$'
@@ -102,5 +107,7 @@ class FTPCrawler(object):
                             print directory
                             print item_name
                             #raise( the_e )
-                        wx.CallAfter(self.main_app.process_new_result, result_dict=video_info)
+
+                        wx.PostEvent( self.main_app, FTPMonitorEvents.ResultFoundEvent( video_info ) )
                 self.append_directory_tree(directory, item_name, True)
+                # PULL_REQ_TEST

@@ -9,6 +9,7 @@ import wx
 
 # Project modules
 import FTPCrawler
+import FTPMonitorEvents
 from AddFTPSourceDialog import AddFTPSourceDialog
 from SuperListCtrl import SuperListCtrl
 import ftp_service_comm
@@ -96,10 +97,13 @@ class FTPMonitorGUI(wx.Frame):
 
         self.Bind( wx.EVT_CLOSE, self.on_quit_cleanup )
 
+        # set up event for when results are found
+        FTPMonitorEvents.BindResultFoundEvent( self, self.process_new_result )
+
         self.destinations = [ ]
         self.active_downloader = None
 
-        #self.sources_listctrl.add_row(['67.172.255.177', '/Public/Movies'])
+        self.sources_listctrl.add_row(['67.172.255.177', '/Public/Movies'])
         self.add_downloader( 'local' )
         #self.sources_listctrl.add_row(['24.162.163.232', '/shares/STAR/movies'])
 
@@ -201,7 +205,8 @@ class FTPMonitorGUI(wx.Frame):
         self.Show()
         self.SetSize((800, 500))
 
-    def process_new_result(self, result_dict):
+    def process_new_result(self, event):
+        result_dict = event.data
         row_data = []
         keys = ['title', 'series', 'episode', 'season', 'mpaa', 'genres', 'runtime', 'rating',
                 'screen_size', 'year', 'filesize', 'ip', 'filename', 'full_path']
@@ -215,7 +220,7 @@ class FTPMonitorGUI(wx.Frame):
         #print '\tRAW:',result_dict
         #print '\tNEW ROW:',row_data
 
-        self.log(result_dict)
+        #self.log(result_dict)
         self.results_listctrl.add_row(row_data)
 
     def log(self, message):
@@ -236,19 +241,19 @@ class FTPMonitorGUI(wx.Frame):
         else:
             self.sources_listctrl.add_row([add_source_dialog.ip, add_source_dialog.path])
 
-    def scanner_worker(self, sources):
-        for source in sources:
-            self.log('Scanning {} -> {}'.format(source['IP'], source['Search Path']))
-            crawler = FTPCrawler.FTPCrawler(source['IP'], source['Search Path'], self)
-            crawler.connect()
-            crawler.scan()
+    def scanner_worker(self, source):
+        crawler = FTPCrawler.FTPCrawler(source['IP'], source['Search Path'], self)
+        crawler.connect()
+        crawler.scan()
 
     def scan_sources_button_callback(self, event):
         if event:
             event.Skip()
         sources = self.sources_listctrl.get_all_rows()
-        scanning_thread = threading.Thread(target=self.scanner_worker, args=(sources,))
-        scanning_thread.start()
+        for source in sources:
+            self.log('Scanning {} -> {}'.format(source['IP'], source['Search Path']))
+            scanning_thread = threading.Thread(target=self.scanner_worker, args=(source,))
+            scanning_thread.start()
 
     def download_button_callback(self, event):
         event.Skip()
